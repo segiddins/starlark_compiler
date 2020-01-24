@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    starlark_compiler (0.1.0)
+    starlark_compiler (0.2.0)
 
 GEM
   remote: https://rubygems.org/
