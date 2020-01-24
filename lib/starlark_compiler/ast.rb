@@ -67,6 +67,8 @@ module StarlarkCompiler
           True.new
         when FalseClass
           False.new
+        when Numeric
+          Number.new(obj)
         else
           raise Error, "#{obj.inspect} not convertible to Node"
         end
@@ -80,6 +82,13 @@ module StarlarkCompiler
     end
 
     class False < Node
+    end
+
+    class Number < Node
+      attr_reader :number
+      def initialize(number)
+        @number = number
+      end
     end
 
     class String < Node

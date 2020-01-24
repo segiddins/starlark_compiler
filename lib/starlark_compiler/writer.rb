@@ -48,6 +48,10 @@ module StarlarkCompiler
       io << str.str.inspect
     end
 
+    def write_number(number)
+      io << number.number.to_s
+    end
+
     def delegate(template, obj)
       snake_case = lambda do |str|
         return str.downcase if str =~ /^[A-Z_]+$/
@@ -63,7 +67,7 @@ module StarlarkCompiler
 
         cls = cls.superclass
       end
-      raise Error, "No #{template} for #{obj.class}"
+      raise "No #{template} for #{obj.class}"
     end
 
     def write_function_call(call)
@@ -157,6 +161,14 @@ module StarlarkCompiler
 
     def single_line_string?(str)
       str.str.size <= 50
+    end
+
+    def single_line_number?(_)
+      true
+    end
+
+    def single_line_binary_operator?(operator)
+      single_line?(operator.lhs) && single_line?(operator.rhs)
     end
 
     def single_line_function_call?(call)
