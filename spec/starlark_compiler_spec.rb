@@ -7,6 +7,7 @@ CHECK_BUILDIFIER = begin
                    rescue Errno::ENOENT
                      false
                    end
+warn 'Skipping buildifier checks' unless CHECK_BUILDIFIER
 
 RSpec.describe StarlarkCompiler do
   it 'has a version number' do
@@ -243,7 +244,10 @@ RSpec.describe StarlarkCompiler do
                                 name: 'Framework',
                                 deps: %w[//A //B //C],
                                 srcs: function_call('glob', ['**/*.swift']),
-                                testonly: 0
+                                testonly: 0,
+                                custom_attr: { 'c' => 'b', 'a' => 'd', 1 => 3 },
+                                do: nil,
+                                a_bit: true
                               ))
       end
 
@@ -269,6 +273,13 @@ RSpec.describe StarlarkCompiler do
             name = "Framework",
             testonly = 0,
             srcs = glob(["**/*.swift"]),
+            a_bit = True,
+            custom_attr = {
+                "c": "b",
+                "a": "d",
+                1: 3,
+            },
+            do = None,
             deps = [
                 "//A",
                 "//B",
