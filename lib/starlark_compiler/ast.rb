@@ -12,34 +12,37 @@ module StarlarkCompiler
       @toplevel << node
     end
 
-    def self.build(&blk)
-      Class.new do
-        def const_name_for(str)
-          str = str.to_s
-          return str if str !~ /_/ && str =~ /[A-Z]+.*/
+    class Builder
+      def const_name_for(str)
+        str = str.to_s
+        return str if str !~ /_/ && str =~ /[A-Z]+.*/
 
-          str.split('_').map(&:capitalize).join.to_sym
-        end
+        str.split('_').map(&:capitalize).join.to_sym
+      end
 
-        def respond_to_missing?(name)
-          AST.constants.include?(const_name_for(name))
-        end
+      def respond_to_missing?(name)
+        AST.constants.include?(const_name_for(name))
+      end
 
-        def method_missing(name, *args, **kwargs)
-          const_name = const_name_for(name)
-          begin
-            v = AST.const_get(const_name)
-          rescue NameError
-            super
+      def method_missing(name, *args, **kwargs)
+        const_name = const_name_for(name)
+        begin
+          v = AST.const_get(const_name)
+        rescue NameError
+          super
+        else
+          if kwargs.empty?
+            v.new(*args)
           else
-            if kwargs.empty?
-              v.new(*args)
-            else
-              v.new(*args, **kwargs)
-            end
+            v.new(*args, **kwargs)
           end
         end
-      end.new.instance_exec(&blk)
+      end
+    end
+    private_constant :Builder
+
+    def self.build(&blk)
+      Builder.new.instance_exec(&blk)
     end
 
     class Node

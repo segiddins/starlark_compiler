@@ -2,17 +2,22 @@
 
 require 'open3'
 
-CHECK_BUILDIFIER = Open3.capture2e('buildifier', '--help').last.success?
+CHECK_BUILDIFIER = begin
+                     Open3.capture2e('buildifier', '--help').last.success?
+                   rescue Errno::ENOENT
+                     false
+                   end
 
 RSpec.describe StarlarkCompiler do
   it 'has a version number' do
     expect(StarlarkCompiler::VERSION).not_to be nil
   end
 
-  def check_buildifier(compiled)
+  def check_buildifier(compiled, type: 'auto')
     return unless CHECK_BUILDIFIER
 
     buildifier, status = Open3.capture2e(%w[buildifier buildifier],
+                                         '-type', type,
                                          stdin_data: compiled)
     expect(compiled).to eq buildifier
     expect(status).to be_success
@@ -221,5 +226,56 @@ RSpec.describe StarlarkCompiler do
     STARLARK
 
     check_buildifier(compiled)
+  end
+
+  describe described_class::BuildFile do
+    it 'works' do
+      build_file = described_class.new(package: 'Frameworks/F')
+
+      build_file.add_load(from: '@hello', of: 'foo')
+      build_file.add_load(from: '@hello//:there', of: %w[abc def])
+      build_file.add_load(from: '@hello', of: 'bar')
+      build_file.add_load(from: '@hello//:morning', of: 'efg')
+
+      StarlarkCompiler::AST.build do
+        build_file.add_target(function_call(
+                                'foo',
+                                name: 'Framework',
+                                deps: %w[//A //B //C],
+                                srcs: function_call('glob', ['**/*.swift']),
+                                testonly: 0
+                              ))
+      end
+
+      compiled = StarlarkCompiler::Writer.write(ast: build_file.to_starlark,
+                                                io: +'')
+
+      check_buildifier(compiled, type: 'build')
+
+      expect(compiled).to eq(<<~'STARLARK')
+        load(
+            "@hello",
+            "bar",
+            "foo",
+        )
+        load("@hello//:morning", "efg")
+        load(
+            "@hello//:there",
+            "abc",
+            "def",
+        )
+
+        foo(
+            name = "Framework",
+            testonly = 0,
+            srcs = glob(["**/*.swift"]),
+            deps = [
+                "//A",
+                "//B",
+                "//C",
+            ],
+        )
+      STARLARK
+    end
   end
 end
