@@ -24,7 +24,10 @@ module StarlarkCompiler
       case ast
       when AST
         ast.toplevel.each_with_index do |o, i|
-          io << "\n\n" unless i.zero?
+          unless i.zero?
+            write_newline
+            write_newline unless o.is_a?(AST::FunctionCall) && o.name == 'load'
+          end
           write_node(o)
         end
       when AST::Node
@@ -32,16 +35,16 @@ module StarlarkCompiler
       else
         raise Error, "Trying to write unknown object #{ast.inspect}"
       end
-      io << "\n"
+      write_newline
     end
 
-    def write_node(node, start_of_line: true)
-      write_start_of_line if start_of_line
+    def write_node(node)
       delegate('write_%s', node)
     end
 
-    def write_start_of_line
-      io << '  ' * indent
+    def write_newline
+      io << "\n"
+      io << '    ' * indent
     end
 
     def write_string(str)
@@ -73,65 +76,63 @@ module StarlarkCompiler
     def write_function_call(call)
       single_line = single_line?(call)
       io << call.name << '('
-      io << "\n" unless single_line
       final_index = single_line && call.kwargs.empty? && call.args.size.pred
       call.args.each_with_index do |arg, idx|
-        indented do
-          write_node(arg, start_of_line: !single_line)
-          unless final_index == idx
-            io << ','
-            io << (single_line ? ' ' : "\n")
-          end
+        indented(single_line: single_line) do |indenter|
+          indenter.write_newline
+          write_node(arg)
+          indenter.write_comma unless final_index == idx
         end
       end
       final_index = single_line && call.kwargs.size.pred
       call.kwargs.each_with_index do |(k, v), idx|
-        indented do
-          write_start_of_line unless single_line
+        indented(single_line: single_line) do |indenter|
+          indenter.write_newline
           io << "#{k} = "
-          write_node(v, start_of_line: false)
-          unless final_index == idx
-            io << ','
-            io << (single_line ? ' ' : "\n")
-          end
+          write_node(v)
+          indenter.write_comma unless final_index == idx
         end
       end
-      write_start_of_line unless single_line
+      write_newline unless single_line
       io << ')'
     end
 
     def write_array(array)
       single_line = single_line?(array)
       io << '['
+      end_index = array.elements.size.pred
       array.elements.each_with_index do |node, i|
-        unless i.zero?
-          io << ','
-          io << "\n" unless single_line
+        indented(single_line: single_line) do |indenter|
+          indenter.write_newline
+          write_node(node)
+          indenter.write_comma unless i == end_index && single_line
         end
-        write_node(node, start_of_line: !single_line)
       end
+      write_newline unless single_line
       io << ']'
     end
 
     def write_dictionary(dictionary)
       single_line = single_line?(dictionary)
       io << '{'
+      end_index = dictionary.elements.size.pred
       dictionary.elements.each_with_index do |(key, value), i|
-        unless i.zero?
-          io << ','
-          io << "\n" unless single_line
+        indented(single_line: single_line) do |indenter|
+          indenter.write_newline
+          write_node(key)
+          io << ': '
+          write_node(value)
+          indenter.write_comma unless i == end_index && single_line
         end
-        write_node(key, start_of_line: !single_line)
-        io << ': '
-        write_node(value, start_of_line: false)
       end
+      write_newline unless single_line
       io << '}'
     end
 
     def write_binary_operator(operator)
-      write_node(operator.lhs, start_of_line: false)
+      write_node(operator.lhs)
       io << " #{operator.operator} "
-      write_node(operator.rhs, start_of_line: false)
+      write_node(operator.rhs)
     end
 
     def write_none(_none)
@@ -143,14 +144,26 @@ module StarlarkCompiler
     end
 
     def write_false(_none)
-      io << 'True'
+      io << 'False'
     end
 
-    def indented
-      @indent += 1
-      yield
+    Indenter = Struct.new(:writer, :should_indent) do
+      def write_newline
+        writer.write_newline if should_indent
+      end
+
+      def write_comma
+        writer.io << (should_indent ? ',' : ', ')
+      end
+    end
+    private_constant :Indenter
+
+    def indented(single_line:)
+      should_indent = !single_line
+      @indent += 1 if should_indent
+      yield Indenter.new(self, should_indent)
     ensure
-      @indent -= 1
+      @indent -= 1 if should_indent
     end
 
     def single_line?(node)
@@ -182,16 +195,13 @@ module StarlarkCompiler
     end
 
     def single_line_array?(array)
-      if array.elements.all? { |e| e.is_a?(AST::String) }
-        array.elements.sum { |s| s.str.length } < 50
-      else
-        array.elements.size <= 1 && array.elements.all?(&method(:single_line?))
-      end
+      array.elements.size <= 1 &&
+        array.elements.all?(&method(:single_line?))
     end
 
     def single_line_dictionary?(dictionary)
       dictionary.elements.size <= 1 &&
-        dictionary.elements.each_value.all?(&method(:single_line?))
+        dictionary.elements.each_key.all?(&method(:single_line?))
     end
   end
 end
