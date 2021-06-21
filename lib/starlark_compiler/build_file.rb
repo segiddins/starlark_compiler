@@ -8,6 +8,7 @@ module StarlarkCompiler
     def initialize(package:, workspace: Dir.pwd)
       @loads = Hash.new { |h, k| h[k] = Set.new }
       @targets = {}
+      @assignments = []
       @package = package
       @workspace = workspace
       @path = File.join(@workspace, @package, 'BUILD.bazel')
@@ -26,6 +27,10 @@ module StarlarkCompiler
       @targets[name] = function_call
     end
 
+    def add_assignment(name, var)
+      @assignments[name] = var
+    end
+
     def save!
       File.open(@path, 'w') do |f|
         Writer.write(ast: to_starlark, io: f)
@@ -36,10 +41,13 @@ module StarlarkCompiler
       loads = @loads
               .sort_by { |k, _| k }
               .map { |f, fn| AST.build { function_call('load', f, *fn.sort) } }
+      assignments = @assignments
+              .sort_by { |k, _| k }
+              .map { |name, var| AST.build { assignment(name, var) } }
       targets = @targets
                 .sort_by { |k, _| k }
                 .map { |_f, fn| normalize_function_call_kwargs(fn) }
-      AST.new(toplevel: loads + targets)
+      AST.new(toplevel: loads + assignments + targets)
     end
 
     private

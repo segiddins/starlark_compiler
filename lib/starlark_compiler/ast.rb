@@ -72,6 +72,8 @@ module StarlarkCompiler
           False.new
         when Numeric
           Number.new(obj)
+        when Variable
+          Variable.new(obj)
         else
           raise Error, "#{obj.inspect} not convertible to Node"
         end
@@ -101,10 +103,27 @@ module StarlarkCompiler
       end
     end
 
+    class Variable < Node
+      attr_reader :var
+      def initialize(var)
+        raise "Only string type is allowed as a variable, got #{var.class}" unless var.is_a?(::String)
+        @var = var
+      end
+    end
+
     class Array < Node
       attr_reader :elements
       def initialize(elements)
         @elements = elements.map(&method(:node))
+      end
+    end
+
+    class Assignment < Node
+      attr_reader :name, :var
+      def initialize(name, var)
+        @name = name
+        raise "Unsupported type on rhs for assignment: #{var.class}" if [FunctionCall, MethodCall, Assignment].include?(var.class)
+        @var = var
       end
     end
 

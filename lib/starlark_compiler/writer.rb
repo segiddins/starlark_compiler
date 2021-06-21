@@ -97,6 +97,16 @@ module StarlarkCompiler
       io << ')'
     end
 
+
+    def write_variable(variable)
+      io << variable.var
+    end
+
+    def write_assignment(assignment)
+      io << assignment.name << ' = '
+      write_node(assignment.var)
+    end
+
     def write_array(array)
       single_line = single_line?(array)
       io << '['
