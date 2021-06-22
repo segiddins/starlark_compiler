@@ -44,12 +44,12 @@ RSpec.describe StarlarkCompiler do
         srcs: function_call('glob', array([string('Sources/**/*.swift')])) +
            ['A.swift']
       )
+      ast << variable_assignment('deps', array([':App_Objc']))
+      ast << variable_assignment('numbers', array([1,2,3]))
       ast << function_call(
         'ios_application',
         name: string('App'),
-        deps: array([
-                      string(':App_Objc')
-                    ]),
+        deps: variable_reference('deps'),
         entitlements: array([string(':App.entitlements')])
       )
       ast
@@ -70,9 +70,17 @@ RSpec.describe StarlarkCompiler do
           srcs = glob(["Sources/**/*.swift"]) + ["A.swift"],
       )
 
+      deps = [":App_Objc"]
+
+      numbers = [
+          1,
+          2,
+          3,
+      ]
+
       ios_application(
           name = "App",
-          deps = [":App_Objc"],
+          deps = deps,
           entitlements = [":App.entitlements"],
       )
     STARLARK
@@ -145,6 +153,10 @@ RSpec.describe StarlarkCompiler do
     ast = StarlarkCompiler::AST.build do
       ast = StarlarkCompiler::AST.new(toplevel: [])
       ast << function_call('load', ':foo.bzl', 'call')
+      ast << variable_assignment('foo', array([1, 2, 3]))
+      ast << variable_assignment('foo2', number(1) + number(3))
+      ast << variable_assignment('foo3', number(1) != number(3))
+      ast << variable_assignment('foo4', true)
       ast << function_call(
         'call',
         _int: 5,
@@ -172,6 +184,18 @@ RSpec.describe StarlarkCompiler do
 
     expect(compiled).to eq(<<~'STARLARK')
       load(":foo.bzl", "call")
+
+      foo = [
+          1,
+          2,
+          3,
+      ]
+
+      foo2 = 1 + 3
+
+      foo3 = False
+
+      foo4 = True
 
       call(
           _int = 5,
@@ -238,17 +262,26 @@ RSpec.describe StarlarkCompiler do
       build_file.add_load(from: '@hello', of: 'bar')
       build_file.add_load(from: '@hello//:morning', of: 'efg')
 
+      build_file.add_variable_assignment(name: 'foovar', var: 'bar')
+      build_file.add_variable_assignment(name: 'foovar2', var: ['bar1', 'bar2'])
+
       StarlarkCompiler::AST.build do
+        build_file.add_variable_assignment(name: 'foovar2', var: ['bar1', 'bar2'])
         build_file.add_target(function_call(
                                 'foo',
                                 name: 'Framework',
                                 deps: %w[//A //B //C],
                                 srcs: function_call('glob', ['**/*.swift']),
+                                some: variable_reference('foovar'),
                                 testonly: 0,
                                 custom_attr: { 'c' => 'b', 'a' => 'd', 1 => 3 },
                                 do: nil,
                                 a_bit: true
                               ))
+        build_file.add_variable_assignment(name: 'fooTarget', var: function_call('foo', name: 'FooTarget'))
+        build_file.add_variable_assignment(name: 'fooBool', var: true)
+        build_file.add_variable_assignment(name: 'fooNil', var: nil)
+        build_file.add_variable_assignment(name: 'fooNumber', var: 10)
       end
 
       compiled = StarlarkCompiler::Writer.write(ast: build_file.to_starlark,
@@ -269,6 +302,21 @@ RSpec.describe StarlarkCompiler do
             "def",
         )
 
+        fooBool = True
+
+        fooNil = None
+
+        fooNumber = 10
+
+        fooTarget = foo(name = "FooTarget")
+
+        foovar = "bar"
+
+        foovar2 = [
+            "bar1",
+            "bar2",
+        ]
+
         foo(
             name = "Framework",
             testonly = 0,
@@ -280,6 +328,7 @@ RSpec.describe StarlarkCompiler do
                 1: 3,
             },
             do = None,
+            some = foovar,
             deps = [
                 "//A",
                 "//B",
