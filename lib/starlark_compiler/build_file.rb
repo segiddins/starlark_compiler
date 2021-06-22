@@ -8,7 +8,7 @@ module StarlarkCompiler
     def initialize(package:, workspace: Dir.pwd)
       @loads = Hash.new { |h, k| h[k] = Set.new }
       @targets = {}
-      @variable_assignments = []
+      @variable_assignments = {}
       @package = package
       @workspace = workspace
       @path = File.join(@workspace, @package, 'BUILD.bazel')
@@ -27,7 +27,7 @@ module StarlarkCompiler
       @targets[name] = function_call
     end
 
-    def add_variable_assignment(name, var)
+    def add_variable_assignment(name:, var:)
       @variable_assignments[name] = var
     end
 

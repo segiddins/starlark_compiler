@@ -120,8 +120,8 @@ module StarlarkCompiler
       attr_reader :name, :var
       def initialize(name, var)
         @name = name
-        raise "Unsupported type on rhs for assignment: #{var.class}" if [Assignment].include?(var.class)
-        @var = var
+        raise "Unsupported type on rhs for assignment: #{var.class}" if [VariableAssignment].include?(var.class)
+        @var = node(var)
       end
     end
 
