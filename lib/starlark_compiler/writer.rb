@@ -98,11 +98,11 @@ module StarlarkCompiler
     end
 
 
-    def write_variable(variable)
+    def write_variable_reference(variable)
       io << variable.var
     end
 
-    def write_assignment(assignment)
+    def write_variable_assignment(assignment)
       io << assignment.name << ' = '
       write_node(assignment.var)
     end

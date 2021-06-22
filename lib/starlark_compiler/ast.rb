@@ -72,10 +72,8 @@ module StarlarkCompiler
           False.new
         when Numeric
           Number.new(obj)
-        when Variable
-          Variable.new(obj)
         else
-          raise Error, "#{obj.inspect} not convertible to Node"
+          raise Error, "Ruby stdlib type #{obj.inspect} not convertible to Node"
         end
       end
     end
@@ -103,10 +101,10 @@ module StarlarkCompiler
       end
     end
 
-    class Variable < Node
+    class VariableReference < Node
       attr_reader :var
       def initialize(var)
-        raise "Only string type is allowed as a variable, got #{var.class}" unless var.is_a?(::String)
+        raise "Only string type is allowed as a variable reference, got #{var.class}" unless var.is_a?(::String)
         @var = var
       end
     end
@@ -118,11 +116,11 @@ module StarlarkCompiler
       end
     end
 
-    class Assignment < Node
+    class VariableAssignment < Node
       attr_reader :name, :var
       def initialize(name, var)
         @name = name
-        raise "Unsupported type on rhs for assignment: #{var.class}" if [FunctionCall, MethodCall, Assignment].include?(var.class)
+        raise "Unsupported type on rhs for assignment: #{var.class}" if [Assignment].include?(var.class)
         @var = var
       end
     end
