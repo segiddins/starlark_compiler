@@ -1,0 +1,23 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "RSpec - active spec file only",
+            "type": "Ruby",
+            "request": "launch",
+            "useBundler": true,
+            "pathToBundler": "/Users/yuanfeng/.rvm/gems/ruby-2.6.1/wrappers/bundle",
+            "pathToRDebugIDE": "/Users/yuanfeng/.rvm/gems/ruby-2.6.1/gems/ruby-debug-ide-0.7.2",
+            "debuggerPort": "1240",
+            "program": "/Users/yuanfeng/.rvm/gems/ruby-2.6.1/bin/rspec",
+            "args": [
+                "-I",
+                "${workspaceRoot}",
+                "${file}"
+            ]
+        }
+    ]
+}
