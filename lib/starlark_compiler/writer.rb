@@ -97,7 +97,6 @@ module StarlarkCompiler
       io << ')'
     end
 
-
     def write_variable_reference(variable)
       io << variable.var
     end

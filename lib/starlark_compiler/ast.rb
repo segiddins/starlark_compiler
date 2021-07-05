@@ -104,7 +104,12 @@ module StarlarkCompiler
     class VariableReference < Node
       attr_reader :var
       def initialize(var)
-        raise "Only string type is allowed as a variable reference, got #{var.class}" unless var.is_a?(::String)
+        unless var.is_a?(::String)
+          raise ''"
+Only string type is allowed as a variable reference, got #{var.class}
+"''
+        end
+
         @var = var
       end
     end
@@ -120,7 +125,10 @@ module StarlarkCompiler
       attr_reader :name, :var
       def initialize(name, var)
         @name = name
-        raise "Unsupported type on rhs for assignment: #{var.class}" if [VariableAssignment].include?(var.class)
+        if [VariableAssignment].include?(var.class)
+          raise "Unsupported type on rhs for assignment: #{var.class}"
+        end
+
         @var = node(var)
       end
     end

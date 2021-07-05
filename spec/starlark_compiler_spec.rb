@@ -45,7 +45,7 @@ RSpec.describe StarlarkCompiler do
            ['A.swift']
       )
       ast << variable_assignment('deps', array([':App_Objc']))
-      ast << variable_assignment('numbers', array([1,2,3]))
+      ast << variable_assignment('numbers', array([1, 2, 3]))
       ast << function_call(
         'ios_application',
         name: string('App'),
@@ -263,10 +263,10 @@ RSpec.describe StarlarkCompiler do
       build_file.add_load(from: '@hello//:morning', of: 'efg')
 
       build_file.add_variable_assignment(name: 'foovar', var: 'bar')
-      build_file.add_variable_assignment(name: 'foovar2', var: ['bar1', 'bar2'])
+      build_file.add_variable_assignment(name: 'foovar2', var: %w[bar1 bar2])
 
       StarlarkCompiler::AST.build do
-        build_file.add_variable_assignment(name: 'foovar2', var: ['bar1', 'bar2'])
+        build_file.add_variable_assignment(name: 'foovar2', var: %w[bar1 bar2])
         build_file.add_target(function_call(
                                 'foo',
                                 name: 'Framework',
@@ -278,7 +278,11 @@ RSpec.describe StarlarkCompiler do
                                 do: nil,
                                 a_bit: true
                               ))
-        build_file.add_variable_assignment(name: 'fooTarget', var: function_call('foo', name: 'FooTarget'))
+        build_file.add_variable_assignment(
+          name: 'fooTarget',
+          var: function_call('foo',
+                             name: 'FooTarget')
+        )
         build_file.add_variable_assignment(name: 'fooBool', var: true)
         build_file.add_variable_assignment(name: 'fooNil', var: nil)
         build_file.add_variable_assignment(name: 'fooNumber', var: 10)
