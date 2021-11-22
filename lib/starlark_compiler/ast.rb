@@ -73,7 +73,7 @@ module StarlarkCompiler
         when Numeric
           Number.new(obj)
         else
-          raise Error, "#{obj.inspect} not convertible to Node"
+          raise Error, "Ruby stdlib type #{obj.inspect} not convertible to Node"
         end
       end
     end
@@ -101,10 +101,35 @@ module StarlarkCompiler
       end
     end
 
+    class VariableReference < Node
+      attr_reader :var
+      def initialize(var)
+        unless var.is_a?(::String)
+          raise ''"
+Only string type is allowed as a variable reference, got #{var.class}
+"''
+        end
+
+        @var = var
+      end
+    end
+
     class Array < Node
       attr_reader :elements
       def initialize(elements)
         @elements = elements.map(&method(:node))
+      end
+    end
+
+    class VariableAssignment < Node
+      attr_reader :name, :var
+      def initialize(name, var)
+        @name = name
+        if [VariableAssignment].include?(var.class)
+          raise "Unsupported type on rhs for assignment: #{var.class}"
+        end
+
+        @var = node(var)
       end
     end
 

@@ -20,9 +20,9 @@ Or install it yourself as:
     $ gem install starlark_compiler
 
 ## Usage
-
+The following code:
 ```ruby
-starlark_string = StarlarkCompiler::AST.build do
+ast = StarlarkCompiler::AST.build do
   ast = StarlarkCompiler::AST.new(toplevel: [])
   ast << function_call(
     'load',
@@ -39,20 +39,48 @@ starlark_string = StarlarkCompiler::AST.build do
     'ios_library',
     name: string('App_Objc'),
     srcs: function_call('glob', array([string('Sources/**/*.swift')])) +
-       ['A.swift']
+        ['A.swift']
   )
+  ast << variable_assignment('deps', array([':App_Objc'])
+  ast << variable_assignment('numbers', array([1,2,3]))
   ast << function_call(
     'ios_application',
     name: string('App'),
-    deps: array([
-                  string(':App_Objc')
-                ]),
+    deps: variable_reference('deps'),
     entitlements: array([string(':App.entitlements')])
   )
-  StarlarkCompiler::Writer.write(ast: ast, io: +'')
+  ast
 end
+starlark_string = StarlarkCompiler::Writer.write(ast: ast, io: +'')
 ```
+will populate `starlark_string` with:
+```python
+load(
+    "@bazel_build_rules_apple//rules:ios.bzl",
+    "ios_application",
+    _ios_application = "ios_application",
+)
+load("@bazel_build_rules_apple//rules:ios.bzl", "ios_application")
 
+ios_library(
+    name = "App_Objc",
+    srcs = glob(["Sources/**/*.swift"]) + ["A.swift"],
+)
+
+deps = [":App_Objc"]
+
+numbers = [
+    1, 
+    2, 
+    3,
+]
+
+ios_application(
+    name = "App",
+    deps = deps,
+    entitlements = [":App.entitlements"],
+)
+```
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
