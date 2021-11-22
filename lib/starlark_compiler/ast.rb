@@ -46,6 +46,8 @@ module StarlarkCompiler
     end
 
     class Node
+      TYPE = :Expression
+
       %i[- + / * % == < <= >= >].each do |op|
         define_method(op) { |rhs| BinaryOperator.new(self, rhs, operator: op) }
       end
@@ -105,9 +107,7 @@ module StarlarkCompiler
       attr_reader :var
       def initialize(var)
         unless var.is_a?(::String)
-          raise ''"
-Only string type is allowed as a variable reference, got #{var.class}
-"''
+          raise "Variable Reference must be a string, not #{var.class}"
         end
 
         @var = var
@@ -122,10 +122,11 @@ Only string type is allowed as a variable reference, got #{var.class}
     end
 
     class VariableAssignment < Node
+      TYPE = :Statement
       attr_reader :name, :var
       def initialize(name, var)
         @name = name
-        if [VariableAssignment].include?(var.class)
+        if node(var).class::TYPE != :Expression
           raise "Unsupported type on rhs for assignment: #{var.class}"
         end
 

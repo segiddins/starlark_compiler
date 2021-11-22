@@ -306,20 +306,20 @@ RSpec.describe StarlarkCompiler do
             "def",
         )
 
-        fooBool = True
-
-        fooNil = None
-
-        fooNumber = 10
-
-        fooTarget = foo(name = "FooTarget")
-
         foovar = "bar"
 
         foovar2 = [
             "bar1",
             "bar2",
         ]
+
+        fooTarget = foo(name = "FooTarget")
+
+        fooBool = True
+
+        fooNil = None
+
+        fooNumber = 10
 
         foo(
             name = "Framework",

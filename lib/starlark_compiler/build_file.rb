@@ -42,7 +42,6 @@ module StarlarkCompiler
               .sort_by { |k, _| k }
               .map { |f, fn| AST.build { function_call('load', f, *fn.sort) } }
       variable_assignments = @variable_assignments
-                             .sort_by { |k, _| k }
                              .map do |name, var|
                                AST.build { variable_assignment(name, var) }
                              end
