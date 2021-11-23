@@ -97,6 +97,27 @@ module StarlarkCompiler
       io << ')'
     end
 
+    def write_function_declaration(declaration)
+      io << 'def ' << declaration.name << '('
+      final_index = declaration.args.size.pred
+      declaration.args.each_with_index do |arg, idx|
+        indented(single_line: false) do |indenter|
+          indenter.write_newline
+          write_node(arg)
+          indenter.write_comma unless final_index == idx
+        end
+      end
+      write_newline
+      io << '):'
+      final_index = declaration.body.size.pred
+      declaration.body.each_with_index do |arg, idx|
+        indented(single_line: false) do |indenter|
+          indenter.write_newline
+          write_node(arg)
+        end
+      end
+    end
+
     def write_variable_reference(variable)
       io << variable.var
     end
@@ -211,6 +232,10 @@ module StarlarkCompiler
     def single_line_dictionary?(dictionary)
       dictionary.elements.size <= 1 &&
         dictionary.elements.each_key.all?(&method(:single_line?))
+    end
+
+    def single_line_variable_reference?(_)
+      true
     end
   end
 end
