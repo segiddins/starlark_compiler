@@ -110,7 +110,7 @@ module StarlarkCompiler
       write_newline
       io << '):'
       final_index = declaration.body.size.pred
-      declaration.body.each_with_index do |arg, idx|
+      declaration.body.each do |arg|
         indented(single_line: false) do |indenter|
           indenter.write_newline
           write_node(arg)
