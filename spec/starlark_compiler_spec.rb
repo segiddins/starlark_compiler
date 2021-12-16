@@ -52,6 +52,24 @@ RSpec.describe StarlarkCompiler do
         deps: variable_reference('deps'),
         entitlements: array([string(':App.entitlements')])
       )
+      ast << function_declaration(
+        'newMacro',
+        [variable_reference('deps'), variable_reference('data')],
+        [
+          function_call(
+            'ios_application',
+            srcs: function_call('glob', array([string('Sources/**/*.swift')])),
+            deps: variable_reference('deps'),
+            data: variable_reference('data')
+          ),
+          function_call(
+            'ios_unit_test',
+            srcs: function_call('glob', array([string('Tests/**/*.swift')])),
+            deps: variable_reference('deps'),
+            data: variable_reference('data')
+          )
+        ]
+      )
       ast
     end
 
@@ -83,6 +101,21 @@ RSpec.describe StarlarkCompiler do
           deps = deps,
           entitlements = [":App.entitlements"],
       )
+
+      def newMacro(
+          deps,
+          data
+      ):
+          ios_application(
+              srcs = glob(["Sources/**/*.swift"]),
+              deps = deps,
+              data = data,
+          )
+          ios_unit_test(
+              srcs = glob(["Tests/**/*.swift"]),
+              deps = deps,
+              data = data,
+          )
     STARLARK
     check_buildifier(compiled)
   end

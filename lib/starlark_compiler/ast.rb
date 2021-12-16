@@ -143,6 +143,16 @@ module StarlarkCompiler
       end
     end
 
+    class FunctionDeclaration < Node
+      attr_reader :name, :args, :body, :kwargs
+      def initialize(name, args, body, **kwargs)
+        @name = name
+        @args = args.map(&method(:node))
+        @body = body.map(&method(:node))
+        @kwargs = kwargs.transform_values(&method(:node))
+      end
+    end
+
     class MethodCall < Node
     end
 
