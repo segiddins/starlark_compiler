@@ -5,13 +5,13 @@ require 'starlark_compiler/writer'
 
 module StarlarkCompiler
   class BuildFile
-    def initialize(package:, workspace: Dir.pwd)
+    def initialize(package:, workspace: Dir.pwd, file_name: 'BUILD.bazel')
       @loads = Hash.new { |h, k| h[k] = Set.new }
       @targets = {}
       @variable_assignments = {}
       @package = package
       @workspace = workspace
-      @path = File.join(@workspace, @package, 'BUILD.bazel')
+      @path = File.join(@workspace, @package, file_name)
     end
 
     def add_load(from:, of:) # rubocop:disable Naming/MethodParameterName
